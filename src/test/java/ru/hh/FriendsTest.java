@@ -1,17 +1,9 @@
 package ru.hh;
 
 
-import static java.util.Arrays.asList;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
-import org.apache.lucene.analysis.ru.RussianAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -27,8 +19,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.GroupingSearch;
 import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.util.BytesRef;
-import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import static ru.hh.friends.FriendsDownloadKt.getSpeechList;
 import ru.hh.friends.Speech;
@@ -39,43 +29,7 @@ import java.io.IOException;
 import java.util.List;
 
 
-public class SearchTest {
-
-
-    @Test
-    public void howAboutRussianGrammar() throws IOException, ParseException {
-        // analyzer
-        Indexer indexer = new Indexer(SearchConfig.INDEX_PATH, new RussianAnalyzer());
-        asList("мировая война", "мировой океан", "мир труд май").forEach(doc -> {
-            Document document = createSimpleDoc("content", doc);
-            try {
-                indexer.addDoc(document);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-        indexer.closeWrite();
-
-        Searcher searcher = new Searcher(SearchConfig.INDEX_PATH, new RussianAnalyzer());
-        long hits = searcher.search("мировые", "content").totalHits;
-
-        assertEquals(hits, 2);
-
-        List<Document> docs = searcher.searchDocs("мировые", "content");
-        for (int i = docs.size() - 1; i >= 0; i--) {
-            Document d = docs.get(i);
-            System.out.println(d.getField("content").stringValue());
-        }
-    }
-
-    private Document createSimpleDoc(String field, String text) {
-        Document doc = new Document();
-        Field pathField = new TextField(field, text, Field.Store.YES);
-        doc.add(pathField);
-        return doc;
-    }
-
-
+public class FriendsTest extends AbstractSearchTest {
 
     @Test
     public void createFriendsSeriesIndex() throws IOException {
@@ -96,44 +50,9 @@ public class SearchTest {
         indexer.closeWrite();
     }
 
-    private Document speechToDoc(Speech speech) {
-        Document doc = new Document();
-        TextField text = new TextField(Fields.TEXT.name(), speech.getPhrase(), Field.Store.YES);
-        doc.add(new StringField(Fields.CHARACTER.name(), speech.getCharacter(), Field.Store.YES));
-        doc.add(new SortedDocValuesField(Fields.CHARACTER_DV.name(), new BytesRef(speech.getCharacter().strip())));
-
-        doc.add(text);
-        doc.add(new TextField(Fields.SEASON.name(), speech.getSeason(), Field.Store.YES));
-        doc.add(new TextField(Fields.LINK.name(), speech.getLink(), Field.Store.YES));
-        doc.add(new TextField(Fields.SERIES.name(), speech.getSeries(), Field.Store.YES));
-        doc.add(new IntPoint(Fields.SERIES_NUMBER.name(), speech.getSeriesNumber()));
-        doc.add(new IntPoint(Fields.SEASON_NUMBER.name(), speech.getSeasonNumber()));
-        doc.add(new NumericDocValuesField(Fields.SEASON_NUMBER_DV.name(), speech.getSeasonNumber()));
-        doc.add(new StoredField(Fields.SEASON_NUMBER_DV.name(), speech.getSeasonNumber()));
-        return doc;
-    }
-
-    private Speech docToSpeech(Document document) {
-        return new Speech(
-            document.getField(Fields.LINK.name()).stringValue(),
-            document.getField(Fields.SEASON.name()).stringValue(),
-            document.getField(Fields.SERIES.name()).stringValue(),
-            document.getField(Fields.CHARACTER.name()).stringValue(),
-            document.getField(Fields.TEXT.name()).stringValue(),
-            document.getField(Fields.SEASON_NUMBER.name()).numericValue().intValue(),
-            document.getField(Fields.SERIES_NUMBER.name()).numericValue().intValue()
-        );
-    }
-
-    private void printResults(List<Document> docs) {
-        for (int i = docs.size() - 1; i >= 0; i--) {
-            Document d = docs.get(i);
-            System.out.println(docToSpeech(d));
-        }
-    }
-
     @Test
     public void whatsUp() throws IOException {
+        // how many replicas
         Searcher searcher = new Searcher(SearchConfig.INDEX_PATH, new EnglishAnalyzer());
         IndexReader reader = searcher.getReader();
         System.out.println("doc counts : " + reader.numDocs());
@@ -194,7 +113,7 @@ public class SearchTest {
     }
 
     @Test
-    public void searchInSeason() throws IOException, ParseException {
+    public void searchInSeason() throws IOException {
         // range & and
 
 
@@ -249,8 +168,4 @@ public class SearchTest {
             System.out.println(doc.getField(Fields.CHARACTER.name()).stringValue() + " " + group.totalHits);
         }
     }
-
-
-
-
 }
