@@ -18,3 +18,4 @@ hh-session-service/src/etc/hh-session/service.properties
 nb-configuration.xml
 .pydevproject
 .pybuild
+index_test/
