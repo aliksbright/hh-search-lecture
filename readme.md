@@ -1,5 +1,5 @@
- Run command:
+ Run commands:
 
- ```mvn clean package
- java -jar target/*.jar```
+ ```mvn clean package```
+ ```java -jar target/*.jar```
 
